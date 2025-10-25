@@ -1,0 +1,66 @@
+name: Manage GitHub Repositories
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'repositories.yaml'
+      - 'repositories.json'
+      - 'main.tf'
+  pull_request:
+    branches: [ main ]
+    paths: 
+      - 'repositories.yaml'
+      - 'repositories.json'
+      - 'main.tf'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+      
+      - name: Terraform Format Check
+        run: terraform fmt -check
+      
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Validate
+        run: terraform validate
+      
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform plan
+
+  apply:
+    runs-on: ubuntu-latest
+    name: Apply Repository Changes
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+      
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform apply -auto-approve
