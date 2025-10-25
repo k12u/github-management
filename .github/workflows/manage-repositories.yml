@@ -19,6 +19,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     name: Validate Configuration
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,6 +50,8 @@ jobs:
     name: Apply Repository Changes
     needs: validate
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
